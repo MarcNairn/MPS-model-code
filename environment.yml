@@ -1,0 +1,10 @@
+name: mps_course
+channels:
+  - defaults
+dependencies:
+  - python==3.11
+  - numpy
+  - matplotlib
+  - scipy
+  - ipykernel
+prefix: /Users/adamsmith/opt/anaconda3/envs/mps_course

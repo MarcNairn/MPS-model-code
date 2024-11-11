@@ -1,0 +1,14 @@
+name: mps_course
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python==3.11
+  - scipy
+  - cython
+  - pybind11
+  - blas[build=accelerate]
+  - numpy
+  - matplotlib
+  - ipykernel
+prefix: /Users/adamsmith/opt/anaconda3/envs/mps_course
