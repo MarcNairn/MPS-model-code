@@ -21,7 +21,7 @@ class MPS:
 
     def copy(self):
         return MPS(self.L, [tensor.copy() for tensor in self.tensors])
-    
+
 
     @classmethod
     def fromVector(cls, vector):
@@ -42,18 +42,43 @@ class MPS:
         L = int(np.log2(vector.size))
 
         tensors = []
-        theta = vector.copy()
+        R = vector.copy()
         chi = 1
         for i in range(L-1):
-            theta = theta.reshape((chi*2,2**(L-1-i)))  # group left and first physical leg
+            R = R.reshape((chi*2,2**(L-1-i)))  # group left and first physical leg
 
-            U, S, Vdg = la.svd(theta, full_matrices=False)
+            U, S, Vdg = la.svd(R, full_matrices=False)
             lp, chi = U.shape[0], U.shape[1]
 
             tensors.append(U.reshape((lp//2,2,chi)))
-            theta = np.diag(S) @ Vdg
+            R = np.diag(S) @ Vdg
 
-        tensors.append(theta.reshape((2,2,1)))  # last tensor
+        tensors.append(R.reshape((2,2,1)))  # last tensor
+
+        return cls(L, tensors)
+    
+
+    @classmethod
+    def productState(cls, L, state):
+        """
+        Create a product state MPS on L sites in a given basis state on each site.
+
+        Parameters
+        ----------
+        L : int
+            Number of sites.
+        state : list of ints
+            List of basis states for each site. E.g. [0, 1, 0, 1] for a 4-site system.
+        """
+
+        tensors = []
+        for s in state:
+            assert s in [0, 1], "Basis states must be 0 or 1."
+
+            if s == 0:
+                tensors.append(np.array([1,0]).reshape((1,2,1)))
+            else:
+                tensors.append(np.array([0,1]).reshape((1,2,1)))
 
         return cls(L, tensors)
     
