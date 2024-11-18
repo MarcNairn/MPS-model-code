@@ -98,3 +98,93 @@ class MPS:
         vector = vector.flatten()
 
         return vector
+    
+
+    def move_centre_left(self):
+        """
+        Move the orthogonality centre to the left. This does not truncate the bond dimension.
+        """
+        if self.centre == 0:
+            return
+
+        tensor_left = self.tensors[self.centre-1]
+        tensor_right = self.tensors[self.centre]
+        chi = tensor_left.shape[2]
+
+        theta = np.tensordot(tensor_left, tensor_right, axes=(2,0))
+        l, p1, p2, r = theta.shape
+        theta = theta.reshape((l*p1, p2*r))
+
+        U, S, Vdg = la.svd(theta, full_matrices=False)
+        U = U[:, :chi]
+        S = S[:chi]
+        Vdg = Vdg[:chi, :]
+
+        tensor_left = U @ np.diag(S)
+        tensor_right = Vdg
+
+        self.tensors[self.centre-1] = tensor_left.reshape((l, p1, chi))
+        self.tensors[self.centre] = tensor_right.reshape((chi, p2, r))
+        self.centre -= 1
+
+
+    def move_centre_right(self):
+        """
+        Move the orthogonality centre to the right. This does not truncate the bond dimension.
+        """
+        if self.centre == self.L-1:
+            return
+
+        tensor_left = self.tensors[self.centre]
+        tensor_right = self.tensors[self.centre+1]
+        chi = tensor_left.shape[2]
+
+        theta = np.tensordot(tensor_left, tensor_right, axes=(2,0))
+        l, p1, p2, r = theta.shape
+        theta = theta.reshape((l*p1, p2*r))
+
+        U, S, Vdg = la.svd(theta, full_matrices=False)
+        U = U[:, :chi]
+        S = S[:chi]
+        Vdg = Vdg[:chi, :]
+
+        tensor_left = U
+        tensor_right = np.diag(S) @ Vdg
+
+        self.tensors[self.centre] = tensor_left.reshape((l, p1, chi))
+        self.tensors[self.centre+1] = tensor_right.reshape((chi, p2, r))
+        self.centre += 1
+
+
+    def move_centre_to(self, i):
+        """
+        Move the orthogonality centre to site i.
+        """
+
+        while self.centre > i:
+            self.move_centre_left()
+
+        while self.centre < i:
+            self.move_centre_right()
+
+
+    def expectation(self, O, site):
+        """
+        Compute the expectation value of an operator at a given site.
+
+        Parameters
+        ----------
+        O : np.ndarray
+            Operator acting on a single site.
+        site : int
+            Site at which to compute the expectation value.
+        """
+
+        self.move_centre_to(site)
+
+        tensor = self.tensors[self.centre]
+
+        expectation = np.tensordot(tensor, O, axes=([1],[1]))  # (l, q, r)*(p, q) -> l, r, p
+        expectation = np.tensordot(expectation, np.conj(tensor), axes=([0,2,1],[0,1,2]))  # (l, r, p) (l, p, r) -> ()
+
+        return np.real(expectation)

@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+from scipy.linalg import expm
 
 
 def HeisenbergHamiltonian(L):
@@ -29,3 +30,26 @@ def HeisenbergGroundState(L):
     E, V = sp.linalg.eigsh(H, k=1, which='SA')
     
     return E[0], V[:,0]
+
+
+def HeisenbergTimeEvolution(L, state, dt, tMax):
+    """
+    Compute the time evolution of the Heisenberg Hamiltonian for a 1D chain of length L. L is even!
+    """
+    H = HeisenbergHamiltonian(L)
+    psi0 = 1.
+    for i in state:
+        psi0 = np.kron(psi0, np.array([int(i == 0), int(i == 1)]))
+    
+    psi = psi0
+    nSteps = int(tMax / dt)
+
+    U = expm(-1j*dt*H)
+    Z = np.kron(np.kron(np.eye(2**(L//2)), np.array([[1,0],[0,-1]])),np.eye(2**(L//2-1)))
+
+    magnetization = []
+    for i in range(nSteps):
+        psi = U @ psi
+        magnetization.append( np.real( psi.conj().T @ Z @ psi ) )
+    
+    return magnetization
