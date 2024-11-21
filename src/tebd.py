@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 
-from svd import svd_truncated
+from .svd import svd_truncated
 
 PauliX = np.array([[0,1],[1,0]])
 PauliY = np.array([[0,-1j],[1j,0]])
@@ -21,7 +21,7 @@ def heisenbergGate(dt):
 
 def applyGate(psi, site, dt, chiMax, tol):
     """
-    Apply a two-site gate for the Heisenberg model at site i.
+    Apply a two-site gate for the Heisenberg model on site and site+1.
     """
 
     gate = heisenbergGate(dt)

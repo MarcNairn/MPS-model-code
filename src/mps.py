@@ -14,13 +14,14 @@ class MPS:
         list of tensors. Indices are (left, physical, right)
     """
 
-    def __init__(self, L, tensors):
+    def __init__(self, L, tensors, centre):
         self.L = L  # number of sites
         self.tensors = tensors  # list of tensors. Indices are (left, physical, right)
+        self.centre = centre  # position of the orthogonality centre
         
 
     def copy(self):
-        return MPS(self.L, [tensor.copy() for tensor in self.tensors])
+        return MPS(self.L, [tensor.copy() for tensor in self.tensors], self.centre)
 
 
     @classmethod
@@ -55,7 +56,7 @@ class MPS:
 
         tensors.append(R.reshape((2,2,1)))  # last tensor
 
-        return cls(L, tensors)
+        return cls(L, tensors, L-1)
     
 
     @classmethod
@@ -80,7 +81,7 @@ class MPS:
             else:
                 tensors.append(np.array([0,1]).reshape((1,2,1)))
 
-        return cls(L, tensors)
+        return cls(L, tensors, 0)
     
 
     def toVector(self):
@@ -174,7 +175,7 @@ class MPS:
 
         Parameters
         ----------
-        O : np.ndarray
+        O : np.ndarray (shape=(2,2))
             Operator acting on a single site.
         site : int
             Site at which to compute the expectation value.
@@ -188,3 +189,23 @@ class MPS:
         expectation = np.tensordot(expectation, np.conj(tensor), axes=([0,2,1],[0,1,2]))  # (l, r, p) (l, p, r) -> ()
 
         return np.real(expectation)
+
+
+    def entropy(self, site):
+        """
+        Compute the bipartite entanglement entropy of the bond between site and site+1.
+        """
+        # Move the centre to the site of interest
+        self.move_centre_to(site)
+
+        C = self.tensors[site]
+        B = self.tensors[site+1]
+
+        # Contract the tensors
+        theta = np.tensordot(C, B, axes=([2], [0]))  # (l, p, j) (j, q, r) -> (l, p, q, r)
+        l, p, q, r = theta.shape
+        theta = theta.reshape((l*p, q*r))
+
+        _, S, _ = la.svd(theta, full_matrices=False)
+
+        return -np.sum(S**2 * np.log(S**2))

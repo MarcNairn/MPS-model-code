@@ -32,6 +32,17 @@ def HeisenbergGroundState(L):
     return E[0], V[:,0]
 
 
+def entanglementEntropy(psi, site):
+    """
+    Compute the entanglement entropy of a quantum state psi across bond between site and site+1.
+    """
+
+    psi = psi.copy().reshape((2**(site+1), -1))
+    _, S, _ = np.linalg.svd(psi, full_matrices=False)
+
+    return -np.sum(S**2 * np.log(S**2))
+
+
 def HeisenbergTimeEvolution(L, state, dt, tMax):
     """
     Compute the time evolution of the Heisenberg Hamiltonian for a 1D chain of length L. L is even!
@@ -48,8 +59,10 @@ def HeisenbergTimeEvolution(L, state, dt, tMax):
     Z = np.kron(np.kron(np.eye(2**(L//2)), np.array([[1,0],[0,-1]])),np.eye(2**(L//2-1)))
 
     magnetization = []
+    entanglement = []
     for i in range(nSteps):
         psi = U @ psi
         magnetization.append( np.real( psi.conj().T @ Z @ psi ) )
+        entanglement.append( entanglementEntropy(psi, L//2-1) )
     
-    return magnetization
+    return magnetization, entanglement
