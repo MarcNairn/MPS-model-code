@@ -42,8 +42,8 @@ class MPO:
     
 
     def get_slice(self, psi, i):
-        M = np.tensordot(self.tensors[i], psi.tensors[i], axes=([2], [1]))  # (l_mpo, p_out, p_in, r_mpo) x (l1, p_in, r1) -> (l_mpo, p_out, r_mpo, l1, r1)
-        M = np.tensordot(psi.tensors[i].conj(), M, axes=([1], [1]))  # (l2, p_out, r2) x (l_mpo, p_out, r_mpo, l1, r1) -> (l2, r2, l_mpo, r_mpo, l1, r1)
+        M = np.tensordot(psi.tensors[i], self.tensors[i], axes=([1],[2]))  # (l1, p_in, r1) x (l_mpo, p_out, p_in, r_mpo) -> (l1, r1, l_mpo, p_out, r_mpo)
+        M = np.tensordot(M, psi.tensors[i].conj(), axes=([3],[1]))  # (l1, r1, l_mpo, p_out, r_mpo) x (l2, p_out, r2) -> (l1, r1, l_mpo, r_mpo, l2, r2)
         M = M.transpose(0, 2, 4, 1, 3, 5)
         return M
 
@@ -58,8 +58,8 @@ class MPO:
 
         for i in range(self.L):
             M = self.get_slice(psi, i)
-            l2, l_mpo, l1, _, _, _ = M.shape
+            l1, l_mpo, l2, _, _, _ = M.shape
 
-            overlap = overlap @ M.reshape(l2*l_mpo*l1, -1)
+            overlap = overlap @ M.reshape(l1*l_mpo*l2, -1)
 
         return np.real(overlap[0, 0])
