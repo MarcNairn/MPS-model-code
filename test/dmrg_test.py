@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 L = 10
 chiMax = 32
-tol = 1e-14
+tol = 1e-10
 
 H = HeisenbergHamiltonian(L)
 mpo = MPO.Hamiltonian(L)
@@ -36,9 +36,9 @@ mpo = MPO.Hamiltonian(L)
 
 psi = MPS.productState(L, [0, 1]*int(L/2))
 
-psi, E_list = dmrg(psi, mpo, chiMax, tol=tol, nSweeps=5)
+psi, E_list = dmrg(psi, mpo, chiMax, tol=tol, nSweeps=20)
 
-plt.plot(np.abs(E_list), 'o-')
+plt.plot(E_list-np.min(E_list), 'o-')
 plt.xlabel('Iteration')
 plt.ylabel('Energy')
 plt.yscale('log')

@@ -5,7 +5,7 @@ from .svd import svd_truncated
 
 import scipy.sparse as sp
 
-def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=100):
+def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=5):
     """
     Perform density matrix renormalization group (DMRG) for a matrix product state (MPS).
 
