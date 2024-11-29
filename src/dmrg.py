@@ -5,6 +5,7 @@ from .svd import svd_truncated
 
 import scipy.sparse as sp
 
+
 def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=5):
     """
     Perform density matrix renormalization group (DMRG) for a matrix product state (MPS).
@@ -33,7 +34,10 @@ def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=5):
     L = psi.L
     assert L == H_mpo.L, "MPS and MPO sizes do not match."
     
-    # build left environment
+    # move centre to right end (won't do anything for product state)
+    psi.move_centre_to(L-1)  
+
+    # build left environment list
     L_envs = [np.array([1]).reshape((1,1,1))]
     for i in range(L-2):
         M = H_mpo.get_slice(psi, i)
@@ -48,21 +52,21 @@ def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=5):
 
         # sweep right to left in dmrg
         for i in range(L-2, 0, -1):
-            psi.move_centre_to(i+1)  # should only do something on first pass
+            psi.move_centre_to(i+1)  # Shouldn't actually do anything (but just to be safe)
 
-            H_block, d1, d2 = construct_H_block(H_mpo, i, L_envs, R_envs)
+            H_block, chi_left, chi_right  = construct_H_block(H_mpo, i, L_envs, R_envs)
 
             _, V = sp.linalg.eigsh(H_block, k=1, which='SA')
 
-            V = V.reshape(d1, d2)
+            V = V.reshape(chi_left*2, 2*chi_right)
 
             U, S, Vdg = svd_truncated(V, chiMax, tol)
             chi = U.shape[1]
             U = U @ np.diag(S)
             psi.centre = i
 
-            psi.tensors[i] = U.reshape(d1//2, 2, chi)
-            psi.tensors[i+1] = Vdg.reshape(chi, 2, d2//2)
+            psi.tensors[i] = U.reshape(chi_left, 2, chi)
+            psi.tensors[i+1] = Vdg.reshape(chi, 2, chi_right)
 
             # update environments
             L_envs.pop()
@@ -74,19 +78,19 @@ def dmrg(psi, H_mpo, chiMax, tol=1E-12, nSweeps=5):
         for i in range(L-2):
             psi.move_centre_to(i)
 
-            H_block, d1, d2 = construct_H_block(H_mpo, i, L_envs, R_envs)
+            H_block, chi_left, chi_right = construct_H_block(H_mpo, i, L_envs, R_envs)
 
             _, V = sp.linalg.eigsh(H_block, k=1, which='SA')
 
-            V = V.reshape(d1, d2)
+            V = V.reshape(chi_left*2, 2*chi_right)
 
             U, S, Vdg = svd_truncated(V, chiMax, tol)
             chi = U.shape[1]
             Vdg = np.diag(S) @ Vdg
             psi.centre = i+1
 
-            psi.tensors[i] = U.reshape(d1//2, 2, chi)
-            psi.tensors[i+1] = Vdg.reshape(chi, 2, d2//2)
+            psi.tensors[i] = U.reshape(chi_left, 2, chi)
+            psi.tensors[i+1] = Vdg.reshape(chi, 2, chi_right)
 
             # update environments
             R_envs.pop()
@@ -105,6 +109,6 @@ def construct_H_block(H_mpo, i, L_envs, R_envs):
     H_block = np.tensordot(H_block, H_mpo.tensors[i+1], axes=([4], [0]))
     H_block = np.tensordot(H_block, R_envs[-1], axes=([6], [1]))
     H_block = H_block.transpose(1, 2, 4, 7, 0, 3, 5, 6)
-    d1, d2, d3, d4, d5, d6, d7, d8 = H_block.shape
-    H_block = H_block.reshape(d1*d2*d3*d4, d5*d6*d7*d8)
-    return H_block, d1*d2, d3*d4
+    chi_left, d2, d3, chi_right, d5, d6, d7, d8 = H_block.shape
+    H_block = H_block.reshape(chi_left*d2*d3*chi_right, d5*d6*d7*d8)
+    return H_block, chi_left, chi_right

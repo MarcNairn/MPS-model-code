@@ -10,36 +10,23 @@ from matplotlib import pyplot as plt
 
 L = 10
 chiMax = 32
-tol = 1e-10
+tol = 1e-14
 
 H = HeisenbergHamiltonian(L)
-mpo = MPO.Hamiltonian(L)
-
 E_exact, psi_exact = HeisenbergGroundState(L)
 
-psi = MPS.productState(L, [0, 1]*int(L/2))
+mpo = MPO.Hamiltonian(L)
 
-psi, E_list = dmrg(psi, mpo, chiMax, tol=tol, nSweeps=5)
+for chiMax in [2, 4, 8, 16, 32]:
 
-plt.plot(np.abs(E_list-E_exact), 'o-')
+    psi = MPS.productState(L, [0]*L)
+
+    psi, E_list = dmrg(psi, mpo, chiMax, tol=tol, nSweeps=5)
+
+    plt.plot(np.abs(E_list-E_exact), 'o-', label=f'chiMax={chiMax}')
+
 plt.xlabel('Iteration')
 plt.ylabel('Error in Energy')
 plt.yscale('log')
-plt.show()
-
-
-L = 50
-chiMax = 8
-tol = 1e-14
-
-mpo = MPO.Hamiltonian(L)
-
-psi = MPS.productState(L, [0, 1]*int(L/2))
-
-psi, E_list = dmrg(psi, mpo, chiMax, tol=tol, nSweeps=20)
-
-plt.plot(E_list-np.min(E_list), 'o-')
-plt.xlabel('Iteration')
-plt.ylabel('Energy')
-plt.yscale('log')
+plt.legend()
 plt.show()
