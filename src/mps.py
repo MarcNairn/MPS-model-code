@@ -209,3 +209,16 @@ class MPS:
         _, S, _ = la.svd(theta, full_matrices=False)
 
         return -np.sum(S**2 * np.log(S**2))
+    
+
+    def applyOperator(self, O, site):
+        """
+        Apply the single site Unitary operator O to site i.
+        """
+
+        tensor = self.tensors[site]
+        tensor = np.tensordot(O, tensor, axes=([1],[1]))  # (out, in)*(l, in, r) -> out, l, r
+        tensor = tensor.transpose((1,0,2))
+
+        self.tensors[site] = tensor
+
