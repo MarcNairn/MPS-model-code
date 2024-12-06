@@ -131,13 +131,13 @@ def plot_dssf(filename, omega):
     exp_omega = np.exp(1j*omega_rep*t_list_rep)
 
     # Fourier Transform of the correlator with window function
-    DSSF = 8*exp_kj @ np.real((correlator * window_function) @ exp_omega)
+    DSSF = 8*t_list[1]*exp_kj @ np.real((correlator * window_function) @ exp_omega)
 
     # plot the DSSF
     plt.imshow((np.abs(DSSF)).T, aspect='auto', origin='lower', cmap='magma_r', extent=[0, 2*np.pi, 0, omega[-1]])
     plt.xlabel('k')
     plt.ylabel('$\omega$')
     plt.xticks([0, np.pi, 2*np.pi], ['0', '$\pi$', '$2\pi$'])
-    plt.clim([0,200])
+    plt.clim([0,40])
     plt.colorbar()
     plt.show()
