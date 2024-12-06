@@ -3,8 +3,8 @@ from src.dssf import plot_dssf
 
 import numpy as np
 
-L = 30
-chi = 8
+L = 100
+chi = 16
 
 filename = f'correlator_L{L}_chi{chi}.pickle'
 
