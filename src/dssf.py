@@ -6,8 +6,10 @@ import math
 import pickle
 from matplotlib import pyplot as plt
 
+from multiprocessing import Process, Manager
 
-def correlator(psi, E_0, j, dt, tMax, chiMax, tol, entropy=False):
+
+def correlator(procid, return_dict, psi, E_0, j, dt, tMax, chiMax, tol, entropy=False):
     """
     Compute the time evolution of the correlator <psi0|Z_j(t) Z_N/2(0)|psi0> using TEBD, for a single site j.
     Includes flag to return the half-chain entropy at each time step.
@@ -52,9 +54,9 @@ def correlator(psi, E_0, j, dt, tMax, chiMax, tol, entropy=False):
             entropy_list.append(psi_j.entropy(L//2))
 
     if entropy:
-        return t_list, correlator_list, entropy_list
+        return_dict[procid] = (t_list, correlator_list, entropy_list)
     else:
-        return t_list, correlator_list
+        return_dict[procid] = (t_list, correlator_list)
     
 
 def computeCorrelator(L, dt, tMax, chiMax, tol, entropy=False):
@@ -76,6 +78,17 @@ def computeCorrelator(L, dt, tMax, chiMax, tol, entropy=False):
 
     print("Found the ground state!")
 
+    processes = []
+    manager = Manager()
+    return_dict = manager.dict()
+
+    # Create len(nums) processes
+    for procid, j in enumerate(range(L)):
+        process = Process(target=correlator, args=(procid, return_dict, psi.copy(), E_0, j, dt, tMax, chiMax, tol, entropy,))
+        processes.append(process)
+        process.start()
+
+    """
     entropy_list = []
     correlator_list = []
     for j in range(L):
@@ -90,6 +103,14 @@ def computeCorrelator(L, dt, tMax, chiMax, tol, entropy=False):
         correlator_list.append(corr)
 
     correlator_array = np.array(correlator_list)
+    """
+    
+    t_list = return_dict[0][0]
+    correlator_list = [return_dict[val][1] for val in range(L)]
+    correlator_array = np.array(correlator_list)
+    if entropy:
+        entropy_list = [return_dict[val][2] for val in range(L)]
+
 
     # save the correlator data to file using pickle
     data = {'L': L, 't_list': t_list, 'correlator': correlator_array}
