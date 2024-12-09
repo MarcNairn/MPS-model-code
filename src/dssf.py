@@ -140,4 +140,3 @@ def plot_dssf(filename, omega):
     plt.xticks([0, np.pi, 2*np.pi], ['0', '$\pi$', '$2\pi$'])
     plt.clim([0,50])
     plt.colorbar()
-    plt.show()
