@@ -9,8 +9,8 @@ import time
 
 if __name__ == '__main__':
     freeze_support()
-    L = 101
-    chiMax = 8
+    L = 100
+    chiMax = 16
     tol = 1e-14
 
     dt = 0.1
