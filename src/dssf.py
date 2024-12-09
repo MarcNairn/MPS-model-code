@@ -6,7 +6,7 @@ import math
 import pickle
 from matplotlib import pyplot as plt
 
-from multiprocessing import Process, Manager
+from multiprocessing import Manager, Pool
 
 
 def correlator(procid, return_dict, psi, E_0, j, dt, tMax, chiMax, tol, entropy=False):
@@ -82,28 +82,13 @@ def computeCorrelator(L, dt, tMax, chiMax, tol, entropy=False):
     manager = Manager()
     return_dict = manager.dict()
 
+    pool = Pool()
+
     # Create len(nums) processes
     for procid, j in enumerate(range(L)):
-        process = Process(target=correlator, args=(procid, return_dict, psi.copy(), E_0, j, dt, tMax, chiMax, tol, entropy,))
-        processes.append(process)
-        process.start()
-
-    """
-    entropy_list = []
-    correlator_list = []
-    for j in range(L):
-        print("site", j)
-
-        # compute the correlator at site j
-        if entropy:
-            t_list, corr, entropy = correlator(psi, E_0, j, dt, tMax, chiMax, tol, entropy=entropy)
-            entropy_list.append(entropy)
-        else:
-            t_list, corr = correlator(psi, E_0, j, dt, tMax, chiMax, tol, entropy=entropy)
-        correlator_list.append(corr)
-
-    correlator_array = np.array(correlator_list)
-    """
+        pool.apply_async(correlator, args=(procid, return_dict, psi.copy(), E_0, j, dt, tMax, chiMax, tol, entropy,))
+    pool.close()
+    pool.join()
     
     t_list = return_dict[0][0]
     correlator_list = [return_dict[val][1] for val in range(L)]
